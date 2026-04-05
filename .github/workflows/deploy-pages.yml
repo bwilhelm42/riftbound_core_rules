@@ -34,6 +34,7 @@ jobs:
         run: |
           mkdir -p dist
           cp output.html dist/index.html
+          echo "trunpet.com" > dist/CNAME
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
