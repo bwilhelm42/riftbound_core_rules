@@ -74,11 +74,25 @@ class Node:
             )
         return f"<span class='rule-text'>{escape(self.text)}</span>"
 
+    def copy_text(self):
+        if self.rule_id:
+            return f"{self.rule_id} {self.text}"
+        return self.text
+
     def anchor_id(self):
         if self.rule_id:
             return f"rule-{self.rule_id.lower().replace('.', '-')}"
         slug = re.sub(r"[^a-z0-9]+", "-", self.text.lower()).strip("-")
         return f"section-{slug or 'root'}"
+
+    def copy_button_html(self):
+        return (
+            f"<button class='copy-button' type='button' "
+            f"data-copy-text='{escape(self.copy_text())}' "
+            f"aria-label='Copy rule text' title='Copy rule text'>"
+            f"<span class='copy-icon' aria-hidden='true'></span>"
+            f"</button>"
+        )
 
 
 # ---------- TREE BUILDING ----------
@@ -119,13 +133,19 @@ def node_to_html(node):
         return (
             f"<div class='leaf' id='{escape(node.anchor_id())}'>"
             f"<span class='label'>{node.html_label()}</span>"
+            f"{node.copy_button_html()}"
             f"</div>"
         )
 
     html = f"<details open id='{escape(node.anchor_id())}'>"
-    html += f"<summary><span class='label'>{node.html_label()}</span></summary>"
+    html += (
+        f"<summary><span class='label'>{node.html_label()}</span>"
+        f"{node.copy_button_html()}</summary>"
+    )
+    html += "<div class='children'>"
     for child in node.children:
         html += node_to_html(child)
+    html += "</div>"
     html += "</details>"
     return html
 
@@ -159,6 +179,7 @@ def build_html(tree):
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Riftbound Rules</title>
 <style>
 :root {
@@ -178,7 +199,7 @@ def build_html(tree):
     box-sizing: border-box;
 }
 body {
-    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-family: "Charter", "Baskerville", "Palatino Linotype", "Book Antiqua", serif;
     margin: 0;
     padding: 32px 20px 56px;
     color: var(--text);
@@ -197,7 +218,10 @@ body {
     gap: 24px;
     align-items: start;
 }
-.toc {
+.mobile-toolbar {
+    display: none;
+}
+.toc-sidebar {
     position: sticky;
     top: 14px;
     max-height: calc(100vh - 28px);
@@ -253,6 +277,7 @@ body {
 }
 .page-title {
     margin: 0;
+    font-family: "Avenir Next Condensed", "Trebuchet MS", "Segoe UI", sans-serif;
     font-size: clamp(2rem, 4vw, 3rem);
     line-height: 1.05;
 }
@@ -264,7 +289,7 @@ body {
 }
 .search-bar {
     position: sticky;
-    top: 14px;
+    top: 0;
     z-index: 10;
     display: flex;
     gap: 12px;
@@ -278,7 +303,7 @@ body {
     backdrop-filter: blur(10px);
     transition: transform 180ms ease, opacity 180ms ease;
 }
-.search-bar.search-hidden-bar {
+.sticky-search.search-hidden-bar {
     opacity: 0;
     transform: translateY(-120%);
     pointer-events: none;
@@ -318,15 +343,17 @@ body {
 }
 details {
     margin-left: 0;
-    border-left: 1px solid rgba(184, 171, 149, 0.35);
-    padding-left: 14px;
 }
-details > details,
-details > .leaf { margin-left: 1.6em; }
+.children {
+    margin-left: 1.6em;
+    padding-left: 14px;
+    border-left: 1px solid rgba(184, 171, 149, 0.35);
+}
 summary, .leaf {
     display: grid;
-    grid-template-columns: 1.5em minmax(0, 1fr);
+    grid-template-columns: 1.5em minmax(0, 1fr) auto;
     align-items: start;
+    column-gap: 10px;
     margin-left: 0;
     padding: 7px 10px;
     border-radius: 10px;
@@ -344,9 +371,66 @@ summary:hover,
 }
 .label {
     display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.copy-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid rgba(184, 171, 149, 0.75);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.copy-button:hover,
+.copy-button:focus-visible {
+    background: rgba(155, 92, 46, 0.1);
+    border-color: rgba(155, 92, 46, 0.5);
+    color: var(--accent);
+    outline: none;
+}
+.copy-button[data-copied="true"] {
+    background: rgba(155, 92, 46, 0.16);
+    border-color: rgba(155, 92, 46, 0.55);
+    color: var(--accent);
+}
+.copy-icon {
+    position: relative;
+    width: 13px;
+    height: 13px;
+}
+.copy-icon::before,
+.copy-icon::after {
+    content: "";
+    position: absolute;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    background: var(--surface-strong);
+}
+.copy-icon::before {
+    width: 9px;
+    height: 9px;
+    top: 0;
+    left: 3px;
+}
+.copy-icon::after {
+    width: 9px;
+    height: 9px;
+    top: 3px;
+    left: 0;
 }
 .rule-id {
     color: var(--accent);
+    font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: 0.01em;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
 }
@@ -357,6 +441,7 @@ summary:hover,
 }
 .rule-text {
     color: var(--text);
+    font-family: "Charter", "Baskerville", "Palatino Linotype", "Book Antiqua", serif;
 }
 .search-hit {
     background: var(--match);
@@ -371,8 +456,8 @@ summary:hover,
 .search-hidden {
     display: none !important;
 }
-summary::-webkit-details-marker { display: none; }
-summary::before, .leaf::before {
+.rules-tree summary::-webkit-details-marker { display: none; }
+.rules-tree summary::before, .leaf::before {
     display: block;
     width: 1.25em;
     color: var(--accent);
@@ -380,38 +465,240 @@ summary::before, .leaf::before {
     font-size: 0.9rem;
     line-height: 1.6;
 }
-summary::before { content: "▾"; }
-details:not([open]) > summary::before { content: "▸"; }
+.rules-tree summary::before { content: "▾"; }
+.rules-tree details:not([open]) > summary::before { content: "▸"; }
 .leaf::before { content: ""; }
-@media (max-width: 760px) {
+@media (max-width: 980px) {
     body {
-        padding: 18px 12px 32px;
+        padding: 14px 10px 28px;
+    }
+    .content > .search-bar.sticky-search {
+        display: none;
     }
     .layout {
         grid-template-columns: 1fr;
+        gap: 14px;
     }
-    .toc {
-        position: static;
-        max-height: none;
-        order: 2;
+    .toc-sidebar {
+        display: none;
+    }
+    .mobile-toolbar {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 15;
+        margin-bottom: 14px;
+        transition: transform 180ms ease, opacity 180ms ease;
+    }
+    .toc-mobile {
+        position: relative;
+        grid-row: 1;
+        grid-column: 1;
+    }
+    .toc-mobile-summary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        padding: 0;
+        border: 1px solid rgba(184, 171, 149, 0.65);
+        border-radius: 14px;
+        background: rgba(255, 251, 244, 0.88);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        list-style: none;
+    }
+    .toc-mobile-summary::-webkit-details-marker {
+        display: none;
+    }
+    .toc-mobile-summary::marker {
+        content: "";
+    }
+    .toc-mobile-summary::before,
+    .toc-mobile-summary::after {
+        content: "";
+    }
+    .hamburger-icon,
+    .hamburger-icon::before,
+    .hamburger-icon::after {
+        display: block;
+        width: 18px;
+        height: 2px;
+        border-radius: 999px;
+        background: var(--accent);
+        transition: transform 140ms ease, opacity 140ms ease;
+    }
+    .hamburger-icon {
+        position: relative;
+    }
+    .hamburger-icon::before,
+    .hamburger-icon::after {
+        content: "";
+        position: absolute;
+        left: 0;
+    }
+    .hamburger-icon::before {
+        top: -6px;
+    }
+    .hamburger-icon::after {
+        top: 6px;
+    }
+    .toc-mobile-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        width: min(92vw, 360px);
+        max-height: min(70vh, 560px);
+        overflow: auto;
+        padding: 10px;
+        background: var(--surface);
+        border: 1px solid rgba(184, 171, 149, 0.6);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+    }
+    .toc-mobile-title {
+        margin: 0 0 8px;
+        padding: 4px 6px 0;
+        color: var(--accent);
+        font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .toc-mobile-links {
+        gap: 4px;
+    }
+    .toc-mobile-link {
+        padding: 10px 12px;
+        font-size: 0.96rem;
+    }
+    .toc-mobile-link.toc-depth-1 {
+        padding-left: 18px;
     }
     .search-bar {
-        top: 8px;
-        flex-wrap: wrap;
+        flex: 1 1 auto;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        margin-bottom: 0;
+        padding: 8px;
+        border-radius: 14px;
+    }
+    .search-bar label {
+        display: none;
+    }
+    .search-bar input {
+        min-width: 0;
+        width: 100%;
+        min-height: 50px;
+        padding: 0 14px;
+        font-size: 16px;
+        line-height: 1.2;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.96);
     }
     .search-status {
         width: 100%;
+        font-size: 13px;
+        white-space: normal;
+    }
+    .mobile-toolbar .search-bar {
+        position: relative;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        column-gap: 10px;
+    }
+    .mobile-toolbar .search-bar input {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .mobile-toolbar .search-status {
+        grid-column: 1 / -1;
+        grid-row: 2;
     }
     .rules-tree {
-        padding: 14px;
+        padding: 10px;
         border-radius: 18px;
     }
-    details {
-        padding-left: 10px;
+    summary, .leaf {
+        grid-template-columns: 1.25em minmax(0, 1fr) 32px;
+        column-gap: 8px;
+        padding: 10px 8px;
+        align-items: start;
     }
-    details > details,
-    details > .leaf {
-        margin-left: 1em;
+    .rules-tree summary::before,
+    .leaf::before {
+        width: 1em;
+        font-size: 0.82rem;
+        line-height: 1.7;
+    }
+    .copy-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+    }
+    .children {
+        margin-left: 0.7em;
+        padding-left: 8px;
+    }
+    .page-header {
+        margin-bottom: 12px;
+    }
+    .eyebrow {
+        margin-bottom: 8px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+    }
+    .page-title {
+        font-size: clamp(1.55rem, 8vw, 2.15rem);
+        line-height: 1.02;
+    }
+    .page-subtitle {
+        margin-top: 8px;
+        font-size: 0.96rem;
+    }
+}
+@media (max-width: 560px) {
+    body {
+        padding: 10px 8px 22px;
+    }
+    .rules-tree {
+        padding: 8px;
+        border-radius: 16px;
+    }
+    .mobile-toolbar {
+        top: 0;
+        margin-bottom: 12px;
+    }
+    .toc-mobile-summary {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+    }
+    .mobile-toolbar .search-bar {
+        padding: 7px;
+        column-gap: 8px;
+    }
+    .mobile-toolbar .search-bar input {
+        min-height: 46px;
+        padding: 0 12px;
+    }
+    .toc-mobile-panel {
+        width: min(94vw, 340px);
+        left: 0;
+        padding: 8px;
+    }
+    summary, .leaf {
+        grid-template-columns: 1em minmax(0, 1fr) 30px;
+        padding: 9px 6px;
+    }
+    .children {
+        margin-left: 0.45em;
+        padding-left: 7px;
     }
 }
 </style>
@@ -423,8 +710,27 @@ details:not([open]) > summary::before { content: "▸"; }
     <h1 class="page-title">Riftbound Core Rules</h1>
     <p class="page-subtitle">Structured rules reference with expandable sections and in-page search for quick lookups.</p>
 </header>
+<div class="mobile-toolbar sticky-search">
+    <div class="search-bar">
+        <details class="toc-mobile">
+            <summary class="toc-mobile-summary" aria-label="Toggle contents menu">
+                <span class="hamburger-icon" aria-hidden="true"></span>
+            </summary>
+            <div class="toc-mobile-panel">
+                <h2 class="toc-mobile-title">Contents</h2>
+                <nav class="toc-links toc-mobile-links">
+"""
+    html += build_toc(tree.children)
+    html += """
+                </nav>
+            </div>
+        </details>
+        <label for="rule-search-mobile">Search rules</label>
+        <input id="rule-search-mobile" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+    </div>
+</div>
 <div class="layout">
-<aside class="toc">
+<aside class="toc-sidebar">
     <h2 class="toc-title">Contents</h2>
     <nav class="toc-links">
 """
@@ -433,10 +739,10 @@ details:not([open]) > summary::before { content: "▸"; }
     </nav>
 </aside>
 <section class="content">
-<div class="search-bar">
-    <label for="rule-search">Search rules</label>
-    <input id="rule-search" type="search" placeholder="Try: conquer, chosen champion, discard..." />
-    <div id="search-status" class="search-status">Showing all rules</div>
+<div class="search-bar sticky-search">
+    <label for="rule-search-desktop">Search rules</label>
+    <input id="rule-search-desktop" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+    <div class="search-status">Showing all rules</div>
 </div>
 <main class="rules-tree">
 """
@@ -449,16 +755,20 @@ details:not([open]) > summary::before { content: "▸"; }
 </div>
 </div>
 <script>
-const searchInput = document.getElementById("rule-search");
-const searchStatus = document.getElementById("search-status");
-const nodes = Array.from(document.querySelectorAll("details, .leaf"));
-const detailNodes = Array.from(document.querySelectorAll("details"));
+const searchInputs = Array.from(document.querySelectorAll(".rule-search-input"));
+const searchStatuses = Array.from(document.querySelectorAll(".search-status"));
+const nodes = Array.from(document.querySelectorAll(".rules-tree details, .rules-tree .leaf"));
+const detailNodes = Array.from(document.querySelectorAll(".rules-tree details"));
 const textNodes = Array.from(document.querySelectorAll(".rule-text"));
 const tocLinks = Array.from(document.querySelectorAll(".toc-link"));
-const searchBar = document.querySelector(".search-bar");
+const tocMobile = document.querySelector(".toc-mobile");
+const stickySearchBars = Array.from(document.querySelectorAll(".sticky-search"));
+const copyButtons = Array.from(document.querySelectorAll(".copy-button"));
 let activeMatchIndex = -1;
 let currentMatches = [];
 let lastScrollY = window.scrollY;
+let copiedButtonTimeout = null;
+let isSyncingSearchInputs = false;
 
 function normalizeText(value) {
     return value
@@ -563,20 +873,29 @@ function updateActiveTocLink() {
 
 function updateSearchBarVisibility() {
     const currentScrollY = window.scrollY;
-    const barHeight = searchBar.offsetHeight + 28;
+    const barHeight = stickySearchBars[0] ? stickySearchBars[0].offsetHeight + 28 : 28;
     const nearTop = currentScrollY < barHeight;
     const scrollingUp = currentScrollY <= lastScrollY;
 
-    searchBar.classList.toggle(
-        "search-hidden-bar",
-        !nearTop && !scrollingUp
-    );
+    stickySearchBars.forEach((bar) => {
+        const isMobileToolbar = bar.classList.contains("mobile-toolbar");
+        const isVisibleAtWidth = isMobileToolbar ? window.innerWidth <= 980 : window.innerWidth > 980;
+        if (!isVisibleAtWidth) {
+            bar.classList.remove("search-hidden-bar");
+            return;
+        }
+
+        bar.classList.toggle("search-hidden-bar", !nearTop && !scrollingUp);
+    });
 
     lastScrollY = currentScrollY;
 }
 
 function updateSearch() {
-    const rawQuery = searchInput.value.trim();
+    const activeInput = document.activeElement && document.activeElement.classList.contains("rule-search-input")
+        ? document.activeElement
+        : searchInputs[0];
+    const rawQuery = (activeInput ? activeInput.value : "").trim();
     const queryTerms = normalizeText(rawQuery).split(" ").filter(Boolean);
     let matchCount = 0;
 
@@ -596,7 +915,9 @@ function updateSearch() {
         detailNodes.forEach((detail) => {
             detail.open = detail.dataset.userOpen === "true";
         });
-        searchStatus.textContent = "Showing all rules";
+        searchStatuses.forEach((status) => {
+            status.textContent = "Showing all rules";
+        });
         return;
     }
 
@@ -626,21 +947,74 @@ function updateSearch() {
         }
     });
 
-    searchStatus.textContent = matchCount
-        ? `${matchCount} matching rule${matchCount === 1 ? "" : "s"}`
-        : "No matching rules";
+    searchStatuses.forEach((status) => {
+        status.textContent = matchCount
+            ? `${matchCount} matching rule${matchCount === 1 ? "" : "s"}`
+            : "No matching rules";
+    });
 
     setActiveMatch(0);
 }
 
-searchInput.addEventListener("input", updateSearch);
-searchInput.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") {
+async function copyTextToClipboard(value) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
         return;
     }
 
-    event.preventDefault();
-    stepActiveMatch(event.shiftKey ? -1 : 1);
+    const helper = document.createElement("textarea");
+    helper.value = value;
+    helper.setAttribute("readonly", "");
+    helper.style.position = "absolute";
+    helper.style.left = "-9999px";
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand("copy");
+    helper.remove();
+}
+
+function showCopiedState(button) {
+    if (copiedButtonTimeout) {
+        window.clearTimeout(copiedButtonTimeout);
+    }
+
+    copyButtons.forEach((item) => {
+        item.dataset.copied = "false";
+        item.setAttribute("title", "Copy rule text");
+    });
+
+    button.dataset.copied = "true";
+    button.setAttribute("title", "Copied");
+    copiedButtonTimeout = window.setTimeout(() => {
+        button.dataset.copied = "false";
+        button.setAttribute("title", "Copy rule text");
+    }, 1200);
+}
+
+searchInputs.forEach((input) => {
+    input.addEventListener("input", () => {
+        if (isSyncingSearchInputs) {
+            return;
+        }
+
+        isSyncingSearchInputs = true;
+        searchInputs.forEach((otherInput) => {
+            if (otherInput !== input) {
+                otherInput.value = input.value;
+            }
+        });
+        isSyncingSearchInputs = false;
+        updateSearch();
+    });
+
+    input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        event.preventDefault();
+        stepActiveMatch(event.shiftKey ? -1 : 1);
+    });
 });
 textNodes.forEach((node) => {
     node.dataset.originalText = node.innerHTML;
@@ -649,6 +1023,23 @@ tocLinks.forEach((link) => {
     link.addEventListener("click", () => {
         tocLinks.forEach((item) => item.classList.remove("toc-link-active"));
         link.classList.add("toc-link-active");
+        if (window.innerWidth <= 980 && tocMobile) {
+            tocMobile.open = false;
+        }
+    });
+});
+copyButtons.forEach((button) => {
+    button.dataset.copied = "false";
+    button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+            await copyTextToClipboard(button.dataset.copyText || "");
+            showCopiedState(button);
+        } catch (error) {
+            button.setAttribute("title", "Copy failed");
+        }
     });
 });
 detailNodes.forEach((detail) => {
@@ -659,13 +1050,14 @@ detailNodes.forEach((detail) => {
                 childDetail.dataset.userOpen = "false";
             });
         }
-        if (!searchInput.value.trim()) {
+        if (!searchInputs.some((input) => input.value.trim())) {
             detail.dataset.userOpen = detail.open ? "true" : "false";
         }
     });
 });
 window.addEventListener("scroll", updateActiveTocLink, { passive: true });
 window.addEventListener("scroll", updateSearchBarVisibility, { passive: true });
+window.addEventListener("resize", updateSearchBarVisibility, { passive: true });
 updateActiveTocLink();
 updateSearchBarVisibility();
 </script>
