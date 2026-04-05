@@ -329,6 +329,58 @@ body {
     border-color: var(--accent);
     box-shadow: 0 0 0 4px var(--accent-soft);
 }
+.search-input-shell {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+.search-input-shell .rule-search-input {
+    width: 100%;
+    padding-right: 76px;
+}
+.search-shortcut {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    color: rgba(108, 97, 84, 0.82);
+    font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    user-select: none;
+}
+.search-nav {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+.search-nav-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(184, 171, 149, 0.75);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.search-nav-button:hover,
+.search-nav-button:focus-visible {
+    background: rgba(155, 92, 46, 0.1);
+    border-color: rgba(155, 92, 46, 0.5);
+    color: var(--accent);
+    outline: none;
+}
+.search-nav-button:disabled {
+    opacity: 0.42;
+    cursor: default;
+}
 .search-status {
     color: var(--muted);
     font-size: 14px;
@@ -593,13 +645,23 @@ summary:hover,
     }
     .search-bar input {
         min-width: 0;
-        width: 100%;
         min-height: 50px;
         padding: 0 14px;
         font-size: 16px;
         line-height: 1.2;
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.96);
+    }
+    .search-input-shell {
+        min-width: 0;
+        width: 100%;
+    }
+    .search-input-shell .rule-search-input {
+        padding-right: 68px;
+    }
+    .search-shortcut {
+        right: 10px;
+        font-size: 0.7rem;
     }
     .search-status {
         width: 100%;
@@ -616,9 +678,14 @@ summary:hover,
         grid-column: 2;
         grid-row: 1;
     }
-    .mobile-toolbar .search-status {
+    .mobile-toolbar .search-nav {
         grid-column: 1 / -1;
         grid-row: 2;
+        justify-content: flex-end;
+    }
+    .mobile-toolbar .search-status {
+        grid-column: 1 / -1;
+        grid-row: 3;
     }
     .rules-tree {
         padding: 10px;
@@ -687,6 +754,17 @@ summary:hover,
         min-height: 46px;
         padding: 0 12px;
     }
+    .mobile-toolbar .search-input-shell .rule-search-input {
+        padding-right: 58px;
+    }
+    .mobile-toolbar .search-shortcut {
+        right: 9px;
+        font-size: 0.66rem;
+    }
+    .search-nav-button {
+        width: 32px;
+        height: 32px;
+    }
     .toc-mobile-panel {
         width: min(94vw, 340px);
         left: 0;
@@ -706,9 +784,7 @@ summary:hover,
 <body>
 <div class="page">
 <header class="page-header">
-    <p class="eyebrow">Reference Document</p>
     <h1 class="page-title">Riftbound Core Rules</h1>
-    <p class="page-subtitle">Structured rules reference with expandable sections and in-page search for quick lookups.</p>
 </header>
 <div class="mobile-toolbar sticky-search">
     <div class="search-bar">
@@ -717,7 +793,6 @@ summary:hover,
                 <span class="hamburger-icon" aria-hidden="true"></span>
             </summary>
             <div class="toc-mobile-panel">
-                <h2 class="toc-mobile-title">Contents</h2>
                 <nav class="toc-links toc-mobile-links">
 """
     html += build_toc(tree.children)
@@ -726,12 +801,18 @@ summary:hover,
             </div>
         </details>
         <label for="rule-search-mobile">Search rules</label>
-        <input id="rule-search-mobile" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+        <div class="search-input-shell">
+            <input id="rule-search-mobile" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+            <span class="search-shortcut"></span>
+        </div>
+        <div class="search-nav">
+            <button class="search-nav-button search-prev" type="button" aria-label="Previous match" title="Previous match">&#8593;</button>
+            <button class="search-nav-button search-next" type="button" aria-label="Next match" title="Next match">&#8595;</button>
+        </div>
     </div>
 </div>
 <div class="layout">
 <aside class="toc-sidebar">
-    <h2 class="toc-title">Contents</h2>
     <nav class="toc-links">
 """
     html += build_toc(tree.children)
@@ -741,7 +822,14 @@ summary:hover,
 <section class="content">
 <div class="search-bar sticky-search">
     <label for="rule-search-desktop">Search rules</label>
-    <input id="rule-search-desktop" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+    <div class="search-input-shell">
+        <input id="rule-search-desktop" class="rule-search-input" type="search" placeholder="Try: conquer, chosen champion, discard..." />
+        <span class="search-shortcut"></span>
+    </div>
+    <div class="search-nav">
+        <button class="search-nav-button search-prev" type="button" aria-label="Previous match" title="Previous match">&#8593;</button>
+        <button class="search-nav-button search-next" type="button" aria-label="Next match" title="Next match">&#8595;</button>
+    </div>
     <div class="search-status">Showing all rules</div>
 </div>
 <main class="rules-tree">
@@ -755,8 +843,13 @@ summary:hover,
 </div>
 </div>
 <script>
+const desktopSearchInput = document.getElementById("rule-search-desktop");
+const mobileSearchInput = document.getElementById("rule-search-mobile");
 const searchInputs = Array.from(document.querySelectorAll(".rule-search-input"));
 const searchStatuses = Array.from(document.querySelectorAll(".search-status"));
+const searchShortcutHints = Array.from(document.querySelectorAll(".search-shortcut"));
+const prevMatchButtons = Array.from(document.querySelectorAll(".search-prev"));
+const nextMatchButtons = Array.from(document.querySelectorAll(".search-next"));
 const nodes = Array.from(document.querySelectorAll(".rules-tree details, .rules-tree .leaf"));
 const detailNodes = Array.from(document.querySelectorAll(".rules-tree details"));
 const textNodes = Array.from(document.querySelectorAll(".rule-text"));
@@ -769,6 +862,8 @@ let currentMatches = [];
 let lastScrollY = window.scrollY;
 let copiedButtonTimeout = null;
 let isSyncingSearchInputs = false;
+let accumulatedUpScroll = 0;
+const searchShortcutLabel = navigator.platform.toLowerCase().includes("mac") ? "Cmd K" : "Ctrl K";
 
 function normalizeText(value) {
     return value
@@ -795,6 +890,7 @@ function clearHighlights() {
     });
     currentMatches = [];
     activeMatchIndex = -1;
+    updateSearchNavButtons();
 }
 
 function applyHighlights(query) {
@@ -840,6 +936,83 @@ function setActiveMatch(index) {
     const activeMatch = currentMatches[activeMatchIndex];
     activeMatch.classList.add("search-hit-active");
     activeMatch.scrollIntoView({ behavior: "smooth", block: "center" });
+    updateSearchNavButtons();
+}
+
+function updateSearchNavButtons() {
+    const isDisabled = !currentMatches.length;
+    prevMatchButtons.forEach((button) => {
+        button.disabled = isDisabled;
+    });
+    nextMatchButtons.forEach((button) => {
+        button.disabled = isDisabled;
+    });
+}
+
+function hasActiveSearchQuery() {
+    return searchInputs.some((input) => input.value.trim());
+}
+
+function isSearchFocused() {
+    return searchInputs.includes(document.activeElement);
+}
+
+function captureScrollAnchor() {
+    const viewportTop = stickySearchBars[0] ? stickySearchBars[0].getBoundingClientRect().bottom + 12 : 0;
+    const anchorNode = nodes.find((node) => {
+        if (node.classList.contains("search-hidden")) {
+            return false;
+        }
+        return node.getBoundingClientRect().bottom >= viewportTop;
+    });
+
+    if (!anchorNode) {
+        return null;
+    }
+
+    return {
+        id: anchorNode.id,
+        top: anchorNode.getBoundingClientRect().top,
+    };
+}
+
+function restoreScrollAnchor(anchor) {
+    if (!anchor || !anchor.id) {
+        return;
+    }
+
+    const anchorNode = document.getElementById(anchor.id);
+    if (!anchorNode || anchorNode.classList.contains("search-hidden")) {
+        return;
+    }
+
+    const newTop = anchorNode.getBoundingClientRect().top;
+    window.scrollBy(0, newTop - anchor.top);
+}
+
+function keepAnchorPathOpen(anchor) {
+    if (!anchor || !anchor.id) {
+        return;
+    }
+
+    let currentNode = document.getElementById(anchor.id);
+    while (currentNode) {
+        if (currentNode.tagName === "DETAILS") {
+            currentNode.open = true;
+        }
+        currentNode = currentNode.parentElement ? currentNode.parentElement.closest("details") : null;
+    }
+}
+
+function isWithinDirectMatch(node) {
+    let currentNode = node.parentElement ? node.parentElement.closest("details") : null;
+    while (currentNode) {
+        if (currentNode.classList.contains("search-direct-match")) {
+            return true;
+        }
+        currentNode = currentNode.parentElement ? currentNode.parentElement.closest("details") : null;
+    }
+    return false;
 }
 
 function stepActiveMatch(direction = 1) {
@@ -853,6 +1026,28 @@ function stepActiveMatch(direction = 1) {
     }
 
     setActiveMatch(activeMatchIndex + direction);
+}
+
+function getPrimarySearchInput() {
+    return window.innerWidth <= 980 ? mobileSearchInput : desktopSearchInput;
+}
+
+function focusSearchInput() {
+    const input = getPrimarySearchInput();
+    if (!input) {
+        return;
+    }
+
+    stickySearchBars.forEach((bar) => {
+        const isMobileToolbar = bar.classList.contains("mobile-toolbar");
+        const isVisibleAtWidth = isMobileToolbar ? window.innerWidth <= 980 : window.innerWidth > 980;
+        if (isVisibleAtWidth) {
+            bar.classList.remove("search-hidden-bar");
+        }
+    });
+
+    input.focus({ preventScroll: true });
+    input.select();
 }
 
 function updateActiveTocLink() {
@@ -875,7 +1070,16 @@ function updateSearchBarVisibility() {
     const currentScrollY = window.scrollY;
     const barHeight = stickySearchBars[0] ? stickySearchBars[0].offsetHeight + 28 : 28;
     const nearTop = currentScrollY < barHeight;
-    const scrollingUp = currentScrollY <= lastScrollY;
+    const scrollDelta = currentScrollY - lastScrollY;
+    const scrollingUp = scrollDelta < 0;
+    const hasFocus = isSearchFocused();
+    const showThreshold = 84;
+
+    if (scrollingUp) {
+        accumulatedUpScroll += Math.abs(scrollDelta);
+    } else if (scrollDelta > 0) {
+        accumulatedUpScroll = 0;
+    }
 
     stickySearchBars.forEach((bar) => {
         const isMobileToolbar = bar.classList.contains("mobile-toolbar");
@@ -885,10 +1089,30 @@ function updateSearchBarVisibility() {
             return;
         }
 
-        bar.classList.toggle("search-hidden-bar", !nearTop && !scrollingUp);
+        const shouldShow = hasFocus || nearTop || accumulatedUpScroll >= showThreshold;
+        bar.classList.toggle("search-hidden-bar", !shouldShow);
     });
 
     lastScrollY = currentScrollY;
+}
+
+function resetSearchView(scrollAnchor) {
+    clearHighlights();
+
+    nodes.forEach((node) => {
+        node.classList.remove("search-match", "search-direct-match", "search-hidden");
+    });
+
+    detailNodes.forEach((detail) => {
+        detail.open = detail.dataset.userOpen === "true";
+    });
+
+    keepAnchorPathOpen(scrollAnchor);
+    searchStatuses.forEach((status) => {
+        status.textContent = "Showing all rules";
+    });
+    restoreScrollAnchor(scrollAnchor);
+    updateSearchBarVisibility();
 }
 
 function updateSearch() {
@@ -898,11 +1122,12 @@ function updateSearch() {
     const rawQuery = (activeInput ? activeInput.value : "").trim();
     const queryTerms = normalizeText(rawQuery).split(" ").filter(Boolean);
     let matchCount = 0;
+    const scrollAnchor = captureScrollAnchor();
 
     clearHighlights();
 
     nodes.forEach((node) => {
-        node.classList.remove("search-match", "search-hidden");
+        node.classList.remove("search-match", "search-direct-match", "search-hidden");
     });
 
     detailNodes.forEach((detail) => {
@@ -912,12 +1137,7 @@ function updateSearch() {
     });
 
     if (!queryTerms.length) {
-        detailNodes.forEach((detail) => {
-            detail.open = detail.dataset.userOpen === "true";
-        });
-        searchStatuses.forEach((status) => {
-            status.textContent = "Showing all rules";
-        });
+        resetSearchView(scrollAnchor);
         return;
     }
 
@@ -927,13 +1147,18 @@ function updateSearch() {
         const label = node.querySelector(".label");
         const isMatch = label && matchesQuery(label.textContent || "", queryTerms);
         if (isMatch) {
+            node.classList.add("search-direct-match");
             node.classList.add("search-match");
             matchCount += 1;
         }
     });
 
     nodes.forEach((node) => {
-        const hasMatch = node.classList.contains("search-match") || node.querySelector(".search-match");
+        const hasMatch = (
+            node.classList.contains("search-direct-match")
+            || node.querySelector(".search-direct-match")
+            || isWithinDirectMatch(node)
+        );
         if (!hasMatch) {
             node.classList.add("search-hidden");
             if (node.tagName === "DETAILS") {
@@ -952,8 +1177,9 @@ function updateSearch() {
             ? `${matchCount} matching rule${matchCount === 1 ? "" : "s"}`
             : "No matching rules";
     });
-
-    setActiveMatch(0);
+    activeMatchIndex = -1;
+    restoreScrollAnchor(scrollAnchor);
+    updateSearchBarVisibility();
 }
 
 async function copyTextToClipboard(value) {
@@ -1008,12 +1234,41 @@ searchInputs.forEach((input) => {
     });
 
     input.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            input.blur();
+            return;
+        }
+
         if (event.key !== "Enter") {
             return;
         }
 
         event.preventDefault();
         stepActiveMatch(event.shiftKey ? -1 : 1);
+    });
+
+    input.addEventListener("focus", () => {
+        updateSearchBarVisibility();
+    });
+
+    input.addEventListener("blur", () => {
+        window.setTimeout(updateSearchBarVisibility, 0);
+    });
+});
+searchShortcutHints.forEach((hint) => {
+    hint.textContent = searchShortcutLabel;
+});
+prevMatchButtons.forEach((button) => {
+    button.disabled = true;
+    button.addEventListener("click", () => {
+        stepActiveMatch(-1);
+    });
+});
+nextMatchButtons.forEach((button) => {
+    button.disabled = true;
+    button.addEventListener("click", () => {
+        stepActiveMatch(1);
     });
 });
 textNodes.forEach((node) => {
@@ -1058,6 +1313,23 @@ detailNodes.forEach((detail) => {
 window.addEventListener("scroll", updateActiveTocLink, { passive: true });
 window.addEventListener("scroll", updateSearchBarVisibility, { passive: true });
 window.addEventListener("resize", updateSearchBarVisibility, { passive: true });
+document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const isTypingTarget = target instanceof HTMLElement && (
+        target.tagName === "INPUT"
+        || target.tagName === "TEXTAREA"
+        || target.isContentEditable
+    );
+
+    if (isTypingTarget) {
+        return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        focusSearchInput();
+    }
+});
 updateActiveTocLink();
 updateSearchBarVisibility();
 </script>

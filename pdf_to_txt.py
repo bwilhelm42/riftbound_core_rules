@@ -2,6 +2,19 @@ import pdfplumber
 from collections import defaultdict
 from contextlib import nullcontext
 
+
+def is_bold_font(font_name):
+    normalized = (font_name or "").lower()
+    return "bold" in normalized or "black" in normalized or "heavy" in normalized
+
+
+def is_entire_line_bold(line_chars):
+    visible_chars = [ch for ch in line_chars if ch["text"].strip()]
+    if not visible_chars:
+        return False
+    return all(is_bold_font(ch.get("fontname")) for ch in visible_chars)
+
+
 def extract_lines_with_fontsize(pdf_path, output_path=None, y_tolerance=3):
     results = [] if output_path is None else None
 
@@ -32,6 +45,11 @@ def extract_lines_with_fontsize(pdf_path, output_path=None, y_tolerance=3):
                 # Font size of first visible character
                 first_char = next((ch for ch in line_chars if ch["text"].strip()), None)
                 font_size = first_char["size"] if first_char else None
+                if font_size is None:
+                    continue
+
+                if is_entire_line_bold(line_chars):
+                    font_size += 1
 
                 line_result = (text, int(font_size))
                 if output_path:
